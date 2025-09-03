@@ -58,13 +58,11 @@ export default function Home() {
       {/* Chat input at top */}
       <div className="sticky top-0 z-10 bg-white/90 backdrop-blur border-b">
         <div className="mx-auto max-w-3xl p-4">
-          <label className="block text-sm font-medium mb-1 text-gray-900">
-            Ask your tutor
-          </label>
+      
           <div className="flex gap-2">
             <textarea
               className="flex-1 rounded-lg border px-4 py-4 text-lg leading-6 min-h-[84px] resize-none text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-slate-900"
-              placeholder="Ask your tutor… (Enter to send, Shift+Enter for a new line)"
+              placeholder="Hi Piper, what can I help you with today?"
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => {
@@ -81,9 +79,16 @@ export default function Home() {
             >
               {loading ? "Thinking…" : "Ask"}
             </button>
+            <button
+  onClick={() => setMessages([])}
+  className="rounded-lg border px-4 py-3"
+  type="button"
+>
+  New Chat
+</button>
           </div>
           <p className="mt-2 text-xs text-slate-600">
-            Instruction-only: hints, strategies, and questions — never final answers.
+           You got this Peanut, Love Dad!
           </p>
         </div>
       </div>
