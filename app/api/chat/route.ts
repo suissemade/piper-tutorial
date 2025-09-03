@@ -3,43 +3,35 @@ import OpenAI from "openai";
 import { NextRequest } from "next/server";
 import { TUTOR_SYSTEM_PROMPT } from "@/lib/tutorPrompt";
 
-// add near the top of the file (below imports)
+export const runtime = "edge";
+
+const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY! });
+
+// Narrow the message type so the OpenAI SDK is happy
 type InMsg = { role: "system" | "user" | "assistant"; content: string };
 
-// later, after you build fullMessages:
-const mapped = (fullMessages as InMsg[]).map(m => ({
-  role: m.role,           // now narrowed to the exact union
-  content: m.content,
-}));
-
-
-export const runtime = "edge"; // Faster on Vercel and locally.
-
-const client = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY!, // make sure this is in .env.local
-});
-
 export async function POST(req: NextRequest) {
-  // Messages come from the browser (your chat UI)
-  const { messages } = (await req.json()) as {
-    messages: { role: "user" | "assistant" | "system"; content: string }[];
-  };
+  const { messages } = (await req.json()) as { messages: InMsg[] };
 
-  // Always prepend our tutor rules
-  const fullMessages = [
+  // Prepend our Socratic tutor rules
+  const fullMessages: InMsg[] = [
     { role: "system", content: TUTOR_SYSTEM_PROMPT },
     ...messages,
   ];
 
-  // Ask OpenAI and enable streaming so text appears as it's generated
+  // Ensure the union type matches the SDK's expected shape
+  const mapped = fullMessages.map((m) => ({
+    role: m.role,
+    content: m.content,
+  }));
+
   const stream = await client.chat.completions.create({
-    model: "gpt-4o-mini", // you can change to another chat model on your account
-    temperature: 0.4,     // smaller = more focused / consistent
+    model: "gpt-4o-mini",
+    temperature: 0.4,
     stream: true,
     messages: mapped,
   });
 
-  // Convert the stream to a web ReadableStream for the browser
   const encoder = new TextEncoder();
   const readable = new ReadableStream({
     async start(controller) {
