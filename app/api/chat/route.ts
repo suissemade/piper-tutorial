@@ -3,6 +3,16 @@ import OpenAI from "openai";
 import { NextRequest } from "next/server";
 import { TUTOR_SYSTEM_PROMPT } from "@/lib/tutorPrompt";
 
+// add near the top of the file (below imports)
+type InMsg = { role: "system" | "user" | "assistant"; content: string };
+
+// later, after you build fullMessages:
+const mapped = (fullMessages as InMsg[]).map(m => ({
+  role: m.role,           // now narrowed to the exact union
+  content: m.content,
+}));
+
+
 export const runtime = "edge"; // Faster on Vercel and locally.
 
 const client = new OpenAI({
@@ -26,7 +36,7 @@ export async function POST(req: NextRequest) {
     model: "gpt-4o-mini", // you can change to another chat model on your account
     temperature: 0.4,     // smaller = more focused / consistent
     stream: true,
-    messages: fullMessages,
+    messages: mapped,
   });
 
   // Convert the stream to a web ReadableStream for the browser
