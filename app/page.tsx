@@ -1,6 +1,7 @@
 "use client";
 import { useRef, useState } from "react";
 
+// Exact union for roles so TS doesn't widen to string
 type Msg = { role: "user" | "assistant"; content: string };
 
 export default function Home() {
@@ -12,7 +13,11 @@ export default function Home() {
   async function send() {
     if (!input.trim()) return;
 
-    const nextMsgs = [...messages, { role: "user", content: input.trim() }];
+    // Make sure TS treats these as Msg[]
+    const nextMsgs: Msg[] = [
+      ...messages,
+      { role: "user", content: input.trim() }, // role is a literal "user"
+    ];
     setMessages(nextMsgs);
     setInput("");
     setLoading(true);
@@ -31,8 +36,18 @@ export default function Home() {
       const { value, done } = await reader.read();
       if (done) break;
       assistant += decoder.decode(value);
-      setMessages([...nextMsgs, { role: "assistant", content: assistant }]);
-      scrollerRef.current?.scrollTo({ top: scrollerRef.current.scrollHeight });
+
+      // Again, keep the literal type for role
+      const withAssistant: Msg[] = [
+        ...nextMsgs,
+        { role: "assistant", content: assistant },
+      ];
+      setMessages(withAssistant);
+
+      scrollerRef.current?.scrollTo({
+        top: scrollerRef.current.scrollHeight,
+        behavior: "smooth",
+      });
     }
 
     setLoading(false);
@@ -43,36 +58,32 @@ export default function Home() {
       {/* Chat input at top */}
       <div className="sticky top-0 z-10 bg-white/90 backdrop-blur border-b">
         <div className="mx-auto max-w-3xl p-4">
+          <label className="block text-sm font-medium mb-1 text-gray-900">
+            Ask your tutor
+          </label>
           <div className="flex gap-2">
             <textarea
-  className="flex-1 rounded-lg border px-4 py-4 text-lg leading-6 min-h-[84px] resize-none"
-  placeholder="Hello Piper, what are we learning today?"
-  value={input}
-  onChange={(e) => setInput(e.target.value)}
-  onKeyDown={(e) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      send();
-    }
-  }}
-/>
-<button
-  onClick={send}
-  disabled={loading}
-  className="rounded-lg border px-5 py-4 bg-slate-900 text-white text-lg disabled:opacity-50"
->
-  {loading ? "Thinking…" : "Ask"}
-</button><button
-  onClick={() => setMessages([])}
-  className="rounded-lg border px-4 py-3"
-  type="button"
->
-  New Chat
-</button>
-
+              className="flex-1 rounded-lg border px-4 py-4 text-lg leading-6 min-h-[84px] resize-none text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-slate-900"
+              placeholder="Ask your tutor… (Enter to send, Shift+Enter for a new line)"
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault();
+                  send();
+                }
+              }}
+            />
+            <button
+              onClick={send}
+              disabled={loading}
+              className="rounded-lg border px-5 py-4 bg-slate-900 text-white text-lg disabled:opacity-50 hover:bg-slate-800 transition"
+            >
+              {loading ? "Thinking…" : "Ask"}
+            </button>
           </div>
-          <p className="mt-2 text-xs text-slate-500">
-            You got this Girlypop! Love you, Dad!
+          <p className="mt-2 text-xs text-slate-600">
+            Instruction-only: hints, strategies, and questions — never final answers.
           </p>
         </div>
       </div>
