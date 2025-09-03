@@ -1,4 +1,3 @@
-// app/api/chat/route.ts
 import OpenAI from "openai";
 import { NextRequest } from "next/server";
 import { TUTOR_SYSTEM_PROMPT } from "@/lib/tutorPrompt";
@@ -7,7 +6,7 @@ export const runtime = "edge";
 
 const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY! });
 
-// Narrow the message type so the OpenAI SDK is happy
+// Narrow the incoming message type so the OpenAI SDK types are happy
 type InMsg = { role: "system" | "user" | "assistant"; content: string };
 
 export async function POST(req: NextRequest) {
@@ -19,7 +18,7 @@ export async function POST(req: NextRequest) {
     ...messages,
   ];
 
-  // Ensure the union type matches the SDK's expected shape
+  // Now map to ensure the union type matches ChatCompletionMessageParam
   const mapped = fullMessages.map((m) => ({
     role: m.role,
     content: m.content,
@@ -32,6 +31,7 @@ export async function POST(req: NextRequest) {
     messages: mapped,
   });
 
+  // Stream tokens back to the browser
   const encoder = new TextEncoder();
   const readable = new ReadableStream({
     async start(controller) {
