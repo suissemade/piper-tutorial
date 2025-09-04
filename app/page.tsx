@@ -1,5 +1,5 @@
 "use client";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 // Exact union for roles so TS doesn't widen to string
 type Msg = { role: "user" | "assistant"; content: string };
@@ -8,16 +8,23 @@ export default function Home() {
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+
   const scrollerRef = useRef<HTMLDivElement>(null);
+  const bottomRef = useRef<HTMLDivElement>(null);
+
+  // Auto-scroll whenever messages update
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    // tiny delay helps on some mobile browsers
+    const t = setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: "smooth" }), 10);
+    return () => clearTimeout(t);
+  }, [messages]);
 
   async function send() {
     if (!input.trim()) return;
 
     // Make sure TS treats these as Msg[]
-    const nextMsgs: Msg[] = [
-      ...messages,
-      { role: "user", content: input.trim() }, // role is a literal "user"
-    ];
+    const nextMsgs: Msg[] = [...messages, { role: "user", content: input.trim() }];
     setMessages(nextMsgs);
     setInput("");
     setLoading(true);
@@ -37,17 +44,9 @@ export default function Home() {
       if (done) break;
       assistant += decoder.decode(value);
 
-      // Again, keep the literal type for role
-      const withAssistant: Msg[] = [
-        ...nextMsgs,
-        { role: "assistant", content: assistant },
-      ];
+      const withAssistant: Msg[] = [...nextMsgs, { role: "assistant", content: assistant }];
       setMessages(withAssistant);
-
-      scrollerRef.current?.scrollTo({
-        top: scrollerRef.current.scrollHeight,
-        behavior: "smooth",
-      });
+      // no manual scroll here; the useEffect above will handle it
     }
 
     setLoading(false);
@@ -58,7 +57,6 @@ export default function Home() {
       {/* Chat input at top */}
       <div className="sticky top-0 z-10 bg-white/90 backdrop-blur border-b">
         <div className="mx-auto max-w-3xl p-4">
-      
           <div className="flex gap-2">
             <textarea
               className="flex-1 rounded-lg border px-4 py-4 text-lg leading-6 min-h-[84px] resize-none text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-slate-900"
@@ -80,21 +78,22 @@ export default function Home() {
               {loading ? "Thinking…" : "Ask"}
             </button>
             <button
-  onClick={() => setMessages([])}
-  className="rounded-lg border px-4 py-3"
-  type="button"
->
-  New Chat
-</button>
+              onClick={() => setMessages([])}
+              className="rounded-lg border px-4 py-3"
+              type="button"
+            >
+              New Chat
+            </button>
           </div>
-          <p className="mt-2 text-xs text-slate-600">
-           You got this Peanut, Love Dad!
-          </p>
+          <p className="mt-2 text-xs text-slate-600">You got this Peanut, Love Dad!</p>
         </div>
       </div>
 
       {/* Messages below */}
-      <div ref={scrollerRef} className="mx-auto max-w-3xl p-4 space-y-4">
+      <div
+        ref={scrollerRef}
+        className="mx-auto max-w-3xl p-4 space-y-4 h-[calc(100vh-180px)] overflow-y-auto"
+      >
         {messages.map((m, i) => (
           <div key={i} className={m.role === "user" ? "text-right" : ""}>
             <div
@@ -107,6 +106,8 @@ export default function Home() {
             </div>
           </div>
         ))}
+        {/* invisible sentinel to scroll to */}
+        <div ref={bottomRef} />
       </div>
     </main>
   );
